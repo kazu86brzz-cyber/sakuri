@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>エディブルフラワー・ハーブ管理</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #fdf6f0; color: #333; }
+
+  header {
+    background: linear-gradient(135deg, #f9a8d4, #fbbf24, #86efac);
+    padding: 24px 32px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    position: relative;
+  }
+  header h1 { font-size: 1.8rem; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.2); letter-spacing: 0.05em; }
+  header p { font-size: 0.9rem; color: rgba(255,255,255,0.9); margin-top: 4px; }
+
+  /* カテゴリ切り替えタブ */
+  .category-tabs {
+    display: flex; justify-content: center; gap: 0;
+    margin-top: 14px;
+  }
+  .cat-tab {
+    padding: 7px 28px;
+    border: 2px solid rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.15);
+    color: #fff; font-weight: bold; font-size: 0.95rem;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .cat-tab:first-child { border-radius: 999px 0 0 999px; }
+  .cat-tab:last-child  { border-radius: 0 999px 999px 0; }
+  .cat-tab.active { background: rgba(255,255,255,0.9); color: #7c3aed; border-color: rgba(255,255,255,0.9); }
+  .cat-tab:hover:not(.active) { background: rgba(255,255,255,0.3); }
+
+  .admin-btn {
+    position: absolute;
+    top: 50%; right: 24px;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,0.25);
+    border: 2px solid rgba(255,255,255,0.6);
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-size: 0.88rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    backdrop-filter: blur(4px);
+  }
+  .admin-btn:hover { background: rgba(255,255,255,0.4); }
+  .admin-btn.active { background: #7c3aed; border-color: #7c3aed; }
+
+  /* 管理パネル */
+  .admin-panel {
+    display: none;
+    background: #fff;
+    border-bottom: 3px solid #e9d5ff;
+    padding: 24px 32px;
+    animation: slideDown 0.25s ease;
+  }
+  .admin-panel.open { display: block; }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .admin-panel h2 {
+    font-size: 1.1rem; color: #7c3aed;
+    margin-bottom: 18px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .admin-hint {
+    background: #f5f3ff;
+    border-left: 4px solid #7c3aed;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    font-size: 0.88rem;
+    color: #5b21b6;
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+  .admin-hint strong { display: block; margin-bottom: 4px; }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 20px;
+    max-width: 700px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-group label { font-size: 0.8rem; font-weight: bold; color: #6b7280; }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 8px 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+    background: #fafafa;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus { border-color: #a78bfa; background: #fff; }
+  .form-group textarea { resize: vertical; min-height: 60px; }
+
+  .season-check-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+  .season-check { display: flex; align-items: center; gap: 4px; font-size: 0.88rem; cursor: pointer; }
+  .season-check input { width: 16px; height: 16px; cursor: pointer; }
+
+  .add-btn {
+    margin-top: 16px;
+    background: #7c3aed;
+    color: #fff;
+    border: none;
+    padding: 10px 28px;
+    border-radius: 999px;
+    font-size: 0.95rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .add-btn:hover { background: #6d28d9; transform: translateY(-1px); }
+
+  /* 追加済み一覧 */
+  .added-list { margin-top: 24px; }
+  .added-list h3 { font-size: 0.9rem; color: #9ca3af; margin-bottom: 10px; }
+  .added-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #f9fafb; border-radius: 8px;
+    padding: 10px 14px; margin-bottom: 6px;
+    font-size: 0.9rem;
+  }
+  .added-item .item-name { font-weight: bold; }
+  .added-item .item-months { color: #db2777; font-size: 0.8rem; margin-left: 8px; }
+  .del-btn {
+    background: none; border: none;
+    color: #f87171; font-size: 1.1rem;
+    cursor: pointer; padding: 0 4px;
+  }
+  .del-btn:hover { color: #ef4444; }
+
+  /* メインUI */
+  .season-tabs {
+    display: flex; justify-content: center;
+    gap: 8px; padding: 20px 16px 0; flex-wrap: wrap;
+  }
+  .season-tab {
+    padding: 8px 22px; border-radius: 999px;
+    border: 2px solid transparent;
+    cursor: pointer; font-size: 0.95rem; font-weight: bold;
+    transition: all 0.2s; background: #fff;
+  }
+  .season-tab:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,0.12); }
+  .season-tab.active { color: #fff; border-color: transparent; }
+  .tab-all.active    { background: #7c3aed; }
+  .tab-spring.active { background: #f472b6; }
+  .tab-summer.active { background: #ef4444; }
+  .tab-autumn.active { background: #f97316; }
+  .tab-winter.active { background: #60a5fa; }
+  .tab-all    { border-color: #7c3aed; color: #7c3aed; }
+  .tab-spring { border-color: #f472b6; color: #f472b6; }
+  .tab-summer { border-color: #ef4444; color: #ef4444; }
+  .tab-autumn { border-color: #f97316; color: #f97316; }
+  .tab-winter { border-color: #60a5fa; color: #60a5fa; }
+
+  .search-box { max-width: 400px; margin: 16px auto 0; padding: 0 16px; }
+  .search-box input {
+    width: 100%; padding: 10px 16px; border-radius: 999px;
+    border: 2px solid #e5e7eb; font-size: 0.95rem; outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-box input:focus { border-color: #f472b6; }
+
+  .flower-count {
+    text-align: center; color: #9ca3af;
+    font-size: 0.82rem; margin-top: 10px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px; padding: 20px 24px 40px;
+    max-width: 1100px; margin: 0 auto;
+  }
+  .card {
+    background: #fff; border-radius: 16px; padding: 18px 14px 14px;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+    border: 2px solid transparent; text-align: center;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.12); border-color: #f9a8d4; }
+  .card.user-added { border-color: #c4b5fd; }
+  .card .flower-img {
+    width: 72px; height: 72px;
+    margin: 0 auto 8px;
+    display: block;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.10));
+    transition: transform 0.2s;
+  }
+  .card:hover .flower-img { transform: scale(1.08) rotate(5deg); }
+  .card .emoji { font-size: 2.4rem; margin-bottom: 8px; }
+  .modal-img { width: 80px; height: 80px; display: block; margin: 0 auto 8px; }
+  .card .name  { font-size: 1rem; font-weight: bold; color: #1f2937; margin-bottom: 4px; }
+  .card .sub   { font-size: 0.75rem; color: #9ca3af; margin-bottom: 8px; }
+  .card .months {
+    font-size: 0.78rem; background: #fdf2f8; color: #db2777;
+    padding: 3px 10px; border-radius: 999px; display: inline-block; margin-bottom: 6px;
+  }
+  .card .tags { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-top: 6px; }
+  .card .tag {
+    font-size: 0.68rem; background: #f3f4f6; color: #6b7280;
+    padding: 2px 7px; border-radius: 999px;
+  }
+  .user-badge {
+    font-size: 0.65rem; background: #ede9fe; color: #7c3aed;
+    padding: 2px 7px; border-radius: 999px; margin-bottom: 4px;
+    display: inline-block;
+  }
+
+  /* モーダル */
+  .overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4); z-index: 100;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 24px; padding: 32px;
+    max-width: 520px; width: 100%; position: relative;
+    max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    animation: popIn 0.2s ease;
+  }
+  @keyframes popIn {
+    from { transform: scale(0.93); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+  }
+  .modal-close {
+    position: absolute; top: 16px; right: 20px;
+    background: none; border: none;
+    font-size: 1.5rem; cursor: pointer; color: #9ca3af; line-height: 1;
+  }
+  .modal-close:hover { color: #374151; }
+  .modal-emoji  { font-size: 3.5rem; text-align: center; margin-bottom: 12px; }
+  .modal-name   { font-size: 1.5rem; font-weight: bold; text-align: center; color: #111; }
+  .modal-sub    { font-size: 0.9rem; color: #9ca3af; text-align: center; margin-bottom: 20px; }
+  .modal-months {
+    text-align: center; font-size: 0.9rem;
+    background: #fdf2f8; color: #db2777;
+    padding: 6px 16px; border-radius: 999px;
+    display: inline-block; margin: 0 auto 20px; width: 100%;
+  }
+  .modal-section { margin-bottom: 16px; }
+  .modal-section h3 {
+    font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #9ca3af; margin-bottom: 6px;
+  }
+  .modal-section p { font-size: 0.95rem; color: #374151; line-height: 1.6; }
+  .modal-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .modal-tag {
+    font-size: 0.82rem; background: #f3f4f6; color: #4b5563;
+    padding: 4px 12px; border-radius: 999px;
+  }
+  .divider { height: 1px; background: #f3f4f6; margin: 14px 0; }
+  .no-result {
+    text-align: center; padding: 60px 20px;
+    color: #9ca3af; font-size: 1rem;
+  }
+
+  /* ページナビ */
+  .page-nav {
+    display: flex; justify-content: center; gap: 8px;
+    padding: 12px 24px; background: #fff;
+    border-bottom: 2px solid #f3e8ff;
+  }
+  .page-nav-btn {
+    padding: 8px 24px; border-radius: 999px;
+    border: 2px solid #e9d5ff;
+    background: #fff; color: #7c3aed;
+    font-size: 0.88rem; font-weight: bold; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .page-nav-btn.active { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+  .page-nav-btn:hover:not(.active) { background: #f5f3ff; }
+
+  /* カレンダーページ */
+  #calendarPage { display: none; padding: 24px 16px 60px; }
+  #calendarPage.open { display: block; }
+
+  .cal-today-section {
+    background: linear-gradient(135deg, #f9a8d4 0%, #fbbf24 50%, #86efac 100%);
+    border-radius: 20px; padding: 24px 28px; margin-bottom: 28px;
+  }
+  .cal-today-section h2 {
+    font-size: 1.15rem; color: #fff; font-weight: bold;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.2); margin-bottom: 6px;
+  }
+  .cal-today-section .month-badge {
+    display: inline-block; background: rgba(255,255,255,0.95);
+    color: #7c3aed; font-weight: bold; font-size: 0.85rem;
+    padding: 4px 14px; border-radius: 999px; margin-bottom: 16px;
+  }
+  .today-cards {
+    display: flex; flex-wrap: wrap; gap: 10px;
+  }
+  .today-card {
+    background: rgba(255,255,255,0.92); border-radius: 14px;
+    padding: 10px 14px; display: flex; align-items: center; gap: 10px;
+    cursor: pointer; transition: transform 0.15s;
+    min-width: 0;
+  }
+  .today-card:hover { transform: translateY(-2px); }
+  .today-card .tc-svg { width: 36px; height: 36px; flex-shrink: 0; }
+  .today-card .tc-info { min-width: 0; }
+  .today-card .tc-name { font-weight: bold; font-size: 0.88rem; color: #1f2937; white-space: nowrap; }
+  .today-card .tc-sub  { font-size: 0.72rem; color: #9ca3af; white-space: nowrap; }
+  .today-card .tc-badge {
+    font-size: 0.65rem; padding: 2px 7px; border-radius: 999px;
+    margin-top: 3px; display: inline-block;
+    background: #ede9fe; color: #7c3aed;
+  }
+  .today-card.herb-card .tc-badge { background: #dcfce7; color: #15803d; }
+
+  /* ガントチャート */
+  .gantt-wrap {
+    background: #fff; border-radius: 20px; padding: 20px 0 24px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07); overflow-x: auto;
+  }
+  .gantt-head {
+    display: flex; padding: 0 16px 10px;
+    border-bottom: 2px solid #f3f4f6;
+  }
+  .gantt-label-col { width: 110px; flex-shrink: 0; }
+  .gantt-months { display: flex; flex: 1; }
+  .gantt-month {
+    flex: 1; text-align: center; font-size: 0.72rem;
+    font-weight: bold; color: #9ca3af; padding: 4px 2px;
+    border-radius: 6px; min-width: 22px;
+  }
+  .gantt-month.current-month {
+    background: #fef9c3; color: #854d0e;
+    border: 2px solid #fbbf24;
+  }
+  .gantt-section-title {
+    font-size: 0.78rem; font-weight: bold;
+    color: #6b7280; padding: 14px 16px 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .gantt-row {
+    display: flex; align-items: center; padding: 3px 16px;
+    gap: 0; transition: background 0.15s; cursor: pointer;
+  }
+  .gantt-row:hover { background: #f9fafb; }
+  .gantt-row-name {
+    width: 110px; flex-shrink: 0;
+    font-size: 0.8rem; color: #374151; font-weight: bold;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    padding-right: 8px;
+  }
+  .gantt-row-bars { display: flex; flex: 1; }
+  .gantt-cell {
+    flex: 1; height: 20px; margin: 2px 1px;
+    border-radius: 4px; min-width: 22px;
+  }
+  .gantt-cell.bloom { background: #f9a8d4; }
+  .gantt-cell.bloom.herb { background: #86efac; }
+  .gantt-cell.current { outline: 2px solid #fbbf24; outline-offset: -1px; }
+  .gantt-cell.empty { background: #f3f4f6; }
+
+  /* 天気ウィジェット */
+  .weather-widget {
+    max-width: 960px; margin: 0 auto;
+    padding: 14px 24px 0;
+  }
+  .weather-widget-inner {
+    background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+    border-radius: 20px;
+    padding: 18px 22px 16px;
+    box-shadow: 0 2px 10px rgba(14,165,233,0.15);
+  }
+  .weather-location {
+    font-size: 0.76rem; color: #0369a1; font-weight: bold;
+    margin-bottom: 12px; display: flex; align-items: center; gap: 4px;
+  }
+  .weather-today {
+    display: flex; align-items: center; gap: 18px;
+    margin-bottom: 14px; padding-bottom: 14px;
+    border-bottom: 1px solid rgba(14,165,233,0.25);
+  }
+  .weather-today-icon { font-size: 2.8rem; line-height: 1; }
+  .weather-today-temp { font-size: 2rem; font-weight: bold; color: #0c4a6e; line-height: 1; }
+  .weather-today-desc { font-size: 0.9rem; color: #0369a1; margin-top: 2px; }
+  .weather-today-sub  { font-size: 0.76rem; color: #0284c7; margin-top: 4px; }
+  .weather-weekly {
+    display: flex; gap: 7px; overflow-x: auto;
+    padding-bottom: 2px;
+  }
+  .weather-weekly::-webkit-scrollbar { height: 4px; }
+  .weather-weekly::-webkit-scrollbar-thumb { background: rgba(14,165,233,0.3); border-radius: 2px; }
+  .weather-day {
+    flex: 1; min-width: 68px;
+    background: rgba(255,255,255,0.55);
+    border-radius: 12px; padding: 9px 5px;
+    text-align: center;
+  }
+  .weather-day.today {
+    background: rgba(255,255,255,0.92);
+    box-shadow: 0 2px 8px rgba(14,165,233,0.2);
+  }
+  .weather-day-name { font-size: 0.7rem; font-weight: bold; color: #0369a1; }
+  .weather-day-icon  { font-size: 1.35rem; margin: 4px 0; }
+  .weather-day-max   { color: #dc2626; font-weight: bold; font-size: 0.75rem; }
+  .weather-day-min   { color: #2563eb; font-size: 0.75rem; }
+  .weather-sep       { color: #9ca3af; font-size: 0.7rem; }
+  .weather-loading   { text-align: center; color: #0369a1; font-size: 0.88rem; padding: 18px; }
+  .weather-error     { text-align: center; color: #6b7280; font-size: 0.84rem; padding: 10px; }
+
+  /* トースト */
+  .toast {
+    position: fixed; bottom: 30px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #7c3aed; color: #fff;
+    padding: 12px 24px; border-radius: 999px;
+    font-size: 0.9rem; font-weight: bold;
+    box-shadow: 0 4px 16px rgba(124,58,237,0.4);
+    opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 200;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="headerTitle">🌸 エディブルフラワー管理</h1>
+  <p id="headerSub">食べられる花の開花時期・詳細情報</p>
+  <div class="category-tabs">
+    <button class="cat-tab active" id="catFlower" onclick="switchCategory('flower')">🌸 エディブルフラワー</button>
+    <button class="cat-tab"        id="catHerb"   onclick="switchCategory('herb')">🌿 ハーブ</button>
+  </div>
+  <button class="admin-btn" id="adminBtn" onclick="toggleAdmin()">⚙️ 管理モード</button>
+</header>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <button class="page-nav-btn active" id="navList"     onclick="showPage('list')">🌸 一覧</button>
+  <button class="page-nav-btn"        id="navCalendar" onclick="showPage('calendar')">📅 開花カレンダー</button>
+</div>
+
+<!-- 天気ウィジェット -->
+<div class="weather-widget">
+  <div class="weather-widget-inner">
+    <div class="weather-location">📍 京都市西京区大原野の天気</div>
+    <div id="weatherContent"><div class="weather-loading">🌤️ 天気情報を読み込み中...</div></div>
+  </div>
+</div>
+
+<!-- カレンダーページ -->
+<div id="calendarPage">
+  <div class="cal-today-section" id="todayBloomSection">
+    <h2 id="todayTitle">🌸 今咲いている花・ハーブ</h2>
+    <div class="month-badge" id="todayMonthBadge"></div>
+    <div class="today-cards" id="todayCards"></div>
+  </div>
+  <div class="gantt-wrap">
+    <div class="gantt-head">
+      <div class="gantt-label-col"></div>
+      <div class="gantt-months" id="ganttMonthHeader"></div>
+    </div>
+    <div id="ganttBody"></div>
+  </div>
+</div>
+
+<!-- 管理パネル -->
+<div class="admin-panel" id="adminPanel">
+  <h2>⚙️ 管理モード — 花を追加する</h2>
+
+  <div class="admin-hint">
+    <strong>💡 Claudeに追加してもらう方法</strong>
+    花の名前をClaudeに伝えるだけでOK！例：「ペチュニアを追加して」と言うとClaudeが開花時期・味・使い方などを調べてこのファイルに追加してくれます。<br>
+    自分で入力したい場合は下のフォームからも追加できます。
+  </div>
+
+  <form onsubmit="addFlower(event)">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>🌺 花の名前（日本語）*</label>
+        <input type="text" id="f-name" placeholder="例：ペチュニア" required>
+      </div>
+      <div class="form-group">
+        <label>🔤 英語名</label>
+        <input type="text" id="f-sub" placeholder="例：Petunia">
+      </div>
+      <div class="form-group">
+        <label>😊 絵文字</label>
+        <input type="text" id="f-emoji" placeholder="例：🌸" maxlength="4">
+      </div>
+      <div class="form-group">
+        <label>📅 開花時期</label>
+        <input type="text" id="f-months" placeholder="例：4〜6月">
+      </div>
+      <div class="form-group full">
+        <label>🌿 季節（複数選択可）</label>
+        <div class="season-check-group">
+          <label class="season-check"><input type="checkbox" value="spring" name="seasons"> 🌸 春</label>
+          <label class="season-check"><input type="checkbox" value="summer" name="seasons"> ☀️ 夏</label>
+          <label class="season-check"><input type="checkbox" value="autumn" name="seasons"> 🍂 秋</label>
+          <label class="season-check"><input type="checkbox" value="winter" name="seasons"> ❄️ 冬</label>
+        </div>
+      </div>
+      <div class="form-group full">
+        <label>🎨 色・特徴</label>
+        <textarea id="f-color" placeholder="例：鮮やかなピンク〜紫。花びらが大きく華やか。"></textarea>
+      </div>
+      <div class="form-group full">
+        <label>👅 味・風味</label>
+        <textarea id="f-taste" placeholder="例：ほぼ無味でほのかに甘い。"></textarea>
+      </div>
+      <div class="form-group full">
+        <label>🍽️ 使い方</label>
+        <textarea id="f-use" placeholder="例：ケーキのトッピング、サラダに。"></textarea>
+      </div>
+      <div class="form-group full">
+        <label>🌱 栽培メモ</label>
+        <textarea id="f-grow" placeholder="例：日当たりを好む。水はけのよい土で育てる。"></textarea>
+      </div>
+      <div class="form-group full">
+        <label>🏷️ タグ（カンマ区切り）</label>
+        <input type="text" id="f-tags" placeholder="例：デコレーション, サラダ, 育てやすい">
+      </div>
+    </div>
+    <button type="submit" class="add-btn">＋ 花を追加する</button>
+  </form>
+
+  <div class="added-list" id="addedList"></div>
+</div>
+
+<!-- メインUI -->
+<div id="listPage">
+<div class="season-tabs">
+  <button class="season-tab tab-all active"   onclick="filterSeason('all')">🌈 すべて</button>
+  <button class="season-tab tab-spring"        onclick="filterSeason('spring')">🌸 春</button>
+  <button class="season-tab tab-summer"        onclick="filterSeason('summer')">☀️ 夏</button>
+  <button class="season-tab tab-autumn"        onclick="filterSeason('autumn')">🍂 秋</button>
+  <button class="season-tab tab-winter"        onclick="filterSeason('winter')">❄️ 冬</button>
+</div>
+
+<div class="search-box">
+  <input type="text" id="searchInput" placeholder="🔍 花の名前で検索..." oninput="renderCards()">
+</div>
+<div class="flower-count" id="flowerCount"></div>
+
+<div class="grid" id="grid"></div>
+</div><!-- /#listPage -->
+
+<!-- モーダル -->
+<div class="overlay" id="overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModalBtn()">✕</button>
+    <div class="modal-emoji" id="m-emoji"></div>
+    <div class="modal-name"  id="m-name"></div>
+    <div class="modal-sub"   id="m-sub"></div>
+    <div class="modal-months" id="m-months"></div>
+    <div class="divider"></div>
+    <div class="modal-section"><h3>🎨 色・特徴</h3><p id="m-color"></p></div>
+    <div class="modal-section"><h3>👅 味・風味</h3><p id="m-taste"></p></div>
+    <div class="modal-section"><h3>🍽️ 使い方</h3><p id="m-use"></p></div>
+    <div class="modal-section"><h3>🌱 栽培メモ</h3><p id="m-grow"></p></div>
+    <div class="modal-section"><h3>🏷️ タグ</h3><div class="modal-tags" id="m-tags"></div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SEASON_COLORS = { spring:'#f472b6', summer:'#ef4444', autumn:'#f97316', winter:'#60a5fa' };
+
+/* ===== ベースデータ ===== */
+const BASE_FLOWERS = [
+  { name:'桜', sub:'Cherry Blossom', emoji:'🌸', seasons:['spring'], months:'3〜4月', color:'淡いピンク〜白。八重咲きや山桜など品種により様々。', taste:'桜独特のほのかな香りと淡い甘み。塩漬けにすると風味が増す。', use:'ケーキやクッキーのトッピング、桜塩漬け、桜風味の飲み物に。花びらをそのまま飾ることも多い。', grow:'落葉樹のため管理スペースが必要。無農薬栽培を徹底。開花直前に収穫するのがベスト。', tags:['デコレーション','和菓子','塩漬け','春の定番'] },
+  { name:'パンジー・ビオラ', sub:'Pansy / Viola', emoji:'💜', seasons:['spring','winter'], months:'11〜5月', color:'紫・黄・白・複色など豊富。中心に模様が入るのが特徴。', taste:'マイルドでほぼ無味。かすかな甘みと青っぽさがある。', use:'サラダ、ケーキ、アイスのトッピングに最多使用。色が鮮やかで見栄えが良い。', grow:'秋に植え付け、冬〜春に開花。耐寒性が高く初心者向け。摘み取ることで長く咲く。', tags:['デコレーション','サラダ','通年出荷可','初心者向け'] },
+  { name:'ナスタチウム', sub:'Nasturtium', emoji:'🧡', seasons:['spring','summer','autumn'], months:'4〜10月', color:'オレンジ・赤・黄のビビッドカラー。葉も丸くかわいい。', taste:'ピリッとした辛みとわずかな甘み。クレソンに似た風味。', use:'サラダに彩りを添える。葉・花・種すべて食用可。バターに混ぜてハーブバターに。', grow:'直まきでよく育つ。乾燥に強く手がかからない。肥料を与えすぎると葉ばかりになる。', tags:['サラダ','葉も食用','育てやすい','ハーブ'] },
+  { name:'カモミール', sub:'Chamomile', emoji:'🌼', seasons:['spring','summer'], months:'4〜6月', color:'白い花びらと黄色い花芯。小ぶりで清楚な印象。', taste:'りんごのような甘い香りが特徴。口に入れると穏やかな甘さ。', use:'ハーブティー、シロップ、焼き菓子の香り付けに。ドライにして保存も可能。', grow:'日当たりのよい場所を好む。こぼれ種で増えるため放任栽培でもOK。', tags:['ハーブティー','香り','ドライ可','アロマ'] },
+  { name:'マリーゴールド', sub:'Marigold', emoji:'🌺', seasons:['summer','autumn'], months:'6〜10月', color:'鮮やかなオレンジ・黄色。八重咲きで豪華な見た目。', taste:'わずかにスパイシーで苦み。花びらのみ使用し、萼は苦いため取り除く。', use:'サフランの代用として料理に色付け。サラダ、スープ、ライスの色付けに。干して粉末にも。', grow:'真夏の直射日光でも元気に育つ。病虫害に強く有機栽培向き。', tags:['色付け','サフラン代用','長期収穫','有機向き'] },
+  { name:'ラベンダー', sub:'Lavender', emoji:'💐', seasons:['summer'], months:'6〜7月', color:'淡い紫色。穂状に小花が密集。乾燥してもきれいな色が残る。', taste:'強い香りと花蜜の甘み。少量で十分な香り付けになる。', use:'ハーブティー、クッキー、ハチミツに漬けて。ドレッシングやソースのアクセントに。', grow:'水はけのよい土を好む。過湿に弱いため高畝推奨。収穫は開花直前が香りが強い。', tags:['ハーブティー','アロマ','ドライ可','香り高い'] },
+  { name:'ボリジ', sub:'Borage', emoji:'💙', seasons:['spring','summer'], months:'4〜7月', color:'鮮やかなコバルトブルー。星形の5枚花びら。白花品種もある。', taste:'きゅうりに似た爽やかな風味。さっぱりしていてクセがない。', use:'氷に閉じ込めてフラワーアイスに。サラダ、ドリンクの飾り付けに人気が高い。', grow:'直まきで育つ。一度植えるとこぼれ種で翌年も出てくる。', tags:['フラワーアイス','サラダ','ドリンク','映える'] },
+  { name:'コーンフラワー（矢車菊）', sub:'Cornflower', emoji:'🔵', seasons:['spring','summer'], months:'5〜8月', color:'鮮やかなブルー。ピンク・白・紫もある。細い花びらが放射状。', taste:'わずかに甘くほとんど無味。香りも控えめ。', use:'ハーブティーや料理のトッピング。ドライフラワーにして保存性が高い。', grow:'直まきOK。乾燥に強く育てやすい。春と秋の2回まきで長期出荷可能。', tags:['ドライ可','ハーブティー','ブルーが珍しい','育てやすい'] },
+  { name:'ズッキーニの花', sub:'Zucchini Blossom', emoji:'💛', seasons:['summer'], months:'6〜8月', color:'大きな黄色〜オレンジの花。雄花・雌花がある。', taste:'ズッキーニに似た淡い甘みとほのかな苦み。', use:'チーズやリコッタを詰めてフリット（揚げ物）に。イタリア料理で定番。', grow:'収穫は朝摘みが基本。雄花は当日中に使わないとしおれる。産直向き。', tags:['イタリア料理','揚げ物','朝摘み','産直向き'] },
+  { name:'バラ', sub:'Rose', emoji:'🌹', seasons:['spring','summer','autumn'], months:'5〜10月（ハウスは通年）', color:'赤・ピンク・白・黄・オレンジなど豊富。', taste:'品種により異なるが甘い香りと淡い甘み。花びらのみ使用。', use:'ケーキのデコレーション、ローズウォーター、ジャム、ハーブティーに。高単価。', grow:'農薬管理が重要。食用には農薬不使用の専用品種を使う。ハウス栽培で通年出荷可。', tags:['高単価','デコレーション','ジャム','ハウス可'] },
+  { name:'ダイアンサス（なでしこ）', sub:'Dianthus', emoji:'🌷', seasons:['spring','summer','autumn'], months:'4〜10月', color:'ピンク・赤・白・複色。フリル状の花びらがかわいらしい。', taste:'ほのかな甘みとクローブに似たスパイシーな香り。', use:'サラダやデザートのトッピング。花びらをばらして散らすと華やか。', grow:'丈夫で育てやすく病害虫が少ない。長期間開花する優秀な品種。', tags:['デコレーション','サラダ','長期開花','育てやすい'] },
+  { name:'食用菊', sub:'Edible Chrysanthemum', emoji:'🌻', seasons:['autumn'], months:'9〜11月', color:'黄・紫・白。山形の「もってのほか」が有名。', taste:'独特の苦みと甘みが共存。さっとゆでると食べやすくなる。', use:'刺身の添え物、酢の物、天ぷら、お吸い物に。日本料理に欠かせない花。', grow:'地植えで毎年育つ宿根草。秋の収穫期に一斉に咲く。日本の気候に適している。', tags:['和食','刺身添え','宿根草','定番'] },
+  { name:'スナップドラゴン（金魚草）', sub:'Snapdragon', emoji:'🌸', seasons:['spring','winter'], months:'11〜5月', color:'赤・ピンク・白・黄・複色。花穂が長くボリューム感がある。', taste:'甘みがあり食べやすい。香りは品種により異なる。', use:'ウェディングケーキや高級デザートのトッピングに人気。', grow:'秋まきで冬〜春に開花。寒さに強い。市場でも人気が高い出荷向き品種。', tags:['高級感','ウェディング','デコレーション','冬春向き'] },
+  { name:'アリッサム', sub:'Alyssum', emoji:'🤍', seasons:['spring','winter'], months:'11〜5月', color:'白・ピンク・紫。小さな花が密集して咲く。', taste:'甘い香りとほのかな甘み。小ぶりで繊細な見た目。', use:'ケーキやデザートの縁取りデコレーションに最適。', grow:'寒さに強く冬でも開花する。こんもりと茂るためグランドカバーにもなる。', tags:['デコレーション','小花','冬春向き','かわいらしい'] },
+  { name:'チャイブの花', sub:'Chive Blossom', emoji:'🟣', seasons:['spring','summer'], months:'4〜6月', color:'薄紫〜ピンク紫。丸い球形の花が茎の先につく。', taste:'玉ねぎ・にんにくに似た風味。花びらは葉よりも香りが穏やか。', use:'サラダ、スープ、クリームチーズに混ぜて。酢漬けにすると美しいピンク色になる。', grow:'宿根草で毎年育つ。管理が楽で有機栽培向き。葉も食用として販売できる。', tags:['ハーブ','酢漬け','宿根草','有機向き'] },
+  { name:'エルダーフラワー', sub:'Elderflower', emoji:'🌿', seasons:['spring','summer'], months:'5〜6月', color:'クリーム色の小花が房状に咲く。上品な見た目。', taste:'マスカットやライチに似た甘い香り。ヨーロッパで人気が高い。', use:'コーディアル（シロップ）、ハーブティー、シャンパンに浮かべて。高級感がある。', grow:'低木のため地植え向き。開花期間が短く希少性が高い。', tags:['シロップ','高級感','ヨーロッパ定番','希少'] },
+  { name:'サフラン', sub:'Saffron', emoji:'🟠', seasons:['autumn'], months:'10〜11月', color:'薄紫の花に赤い雌しべ（サフラン）が3本。', taste:'独特の土臭さと甘み。世界最高級スパイスとして知られる。', use:'パエリア、リゾットの色付けと香り付け。雌しべのみを乾燥させて使用。', grow:'球根植物。秋に植えると数週間で開花。雌しべの収穫は開花直後の朝のみ。非常に手間がかかる。', tags:['高単価','スパイス','色付け','球根'] },
+  { name:'桜草（プリムラ）', sub:'Primula', emoji:'🌸', seasons:['spring','winter'], months:'2〜4月', color:'ピンク・赤・白・黄・紫など豊富なカラーバリエーション。', taste:'ほぼ無味でほのかに甘い。見た目の可愛らしさが魅力。', use:'ケーキやマカロンのトッピング。春のウェディングに人気。', grow:'寒さに強く早春から咲く。高温多湿の夏が苦手。秋まきで冬〜春に安定出荷できる。', tags:['春の定番','デコレーション','ウェディング','早春'] },
+  { name:'カタクリ', sub:'Erythronium japonicum', emoji:'🌸', seasons:['spring'], months:'3〜4月', color:'淡い紫ピンク。花びらが大きく反り返る独特のフォルム。', taste:'甘みがありほのかに上品な風味。球根・葉・花すべて食用可。', use:'早春の和食の飾り、デザートのトッピングに。希少性が高く高付加価値。', grow:'球根植物で半日陰を好む。落葉樹の下が最適。開花期間が短く希少性が高い。', tags:['早春','和食','球根','希少'] },
+  { name:'ストック', sub:'Stock / Matthiola', emoji:'🌸', seasons:['spring','winter'], months:'3〜5月', color:'白・ピンク・紫・赤など豊富。穂状に多数の花が密集して咲く。', taste:'甘い香りと柔らかな甘み。花びらを食べると上品な風味。', use:'ケーキのデコレーション、サラダのトッピングに。香りが強く存在感がある。', grow:'秋まき春咲き。香りが強く人気が高い。切り花としても需要が高い品種。', tags:['香り','春の定番','デコレーション','香水系'] },
+  { name:'デイジー', sub:'Daisy / Bellis', emoji:'🌼', seasons:['spring','winter'], months:'2〜5月', color:'白い花びらと黄色い花芯。シンプルで可愛らしい見た目。', taste:'ほぼ無味でほのかに甘い。苦みは少なく食べやすい。', use:'サラダやデザートのトッピングに。カモミールに似た見た目で使いやすい。', grow:'耐寒性が高く初心者向け。こんもりと育ち長期間開花する。秋まき推奨。', tags:['デコレーション','初心者向け','冬春','サラダ'] },
+  { name:'菜の花', sub:'Rapeseed Flower', emoji:'💛', seasons:['spring'], months:'2〜4月', color:'鮮やかな黄色の十字形の花。春の野原を彩る代表的な花。', taste:'苦みと甘みのバランスが良い。春らしいほろ苦さが特徴。', use:'おひたし、天ぷら、和え物に。花は料理の彩りや飾りとしても定番。', grow:'秋まきで早春から開花。育てやすく大量収穫できる。日本の春野菜の定番。', tags:['和食','春の定番','苦味','天ぷら'] },
+  { name:'スイートバイオレット', sub:'Sweet Violet', emoji:'💜', seasons:['spring','winter'], months:'3〜4月', color:'深い紫または白。甘い香りが強い小ぶりの花。', taste:'上品な甘い香りと甘み。砂糖漬けにすると美しく保存できる。', use:'ケーキの砂糖漬け飾り、リキュール、ジャムに。高級菓子の定番素材。', grow:'日陰でも育つ。宿根草で毎年育つため管理が楽。開花期間が短いため希少性がある。', tags:['砂糖漬け','香り','宿根草','上品'] },
+  { name:'カレンデュラ', sub:'Calendula', emoji:'🧡', seasons:['spring','autumn'], months:'4〜6月・9〜11月', color:'オレンジ・黄色の明るい色。マリーゴールドに似た鮮やかな印象。', taste:'わずかにスパイシーで苦み。マリーゴールドに似た風味。', use:'サラダやスープに色付け。サフランの代用にも。ドライにして長期保存可。', grow:'霜に強く春と秋に二期咲き。害虫忌避効果もあり混植に向く有機栽培向き品種。', tags:['色付け','ドライ可','二期咲き','有機向き'] },
+  { name:'リナリア', sub:'Linaria', emoji:'🌸', seasons:['spring'], months:'4〜5月', color:'白・ピンク・黄・紫など。金魚草に似た小花が穂状につく。', taste:'ほぼ無味。繊細で儚い美しさが魅力。', use:'ケーキや飲み物の飾りに。その儚い美しさと多彩な色で人気が高い。', grow:'秋まきで春咲き。こぼれ種でよく増えるため一度植えれば毎年育つ。', tags:['デコレーション','儚い','繊細','こぼれ種'] },
+  { name:'ベゴニア', sub:'Begonia', emoji:'🌺', seasons:['summer','autumn'], months:'6〜10月', color:'赤・ピンク・白・オレンジ。肉厚でツヤのある花びら。', taste:'酸味があり爽やか。果物のようなフレッシュな風味。', use:'サラダのトッピング、冷菜の飾りに。酸味が料理のアクセントになる。', grow:'半日陰でも育つ優秀な植物。高温多湿に強く夏の長期出荷に最適。', tags:['サラダ','酸味','半日陰OK','長期開花'] },
+  { name:'カーネーション', sub:'Carnation', emoji:'🌸', seasons:['spring','summer'], months:'5〜7月', color:'赤・ピンク・白・複色。フリル状の花びらが豪華な印象。', taste:'スパイシーな甘い香り。クローブに似た風味で花酒にも使われる。', use:'サラダ、デザートの飾り。花びらをばらして散らすと華やか。花酒にも仕込める。', grow:'多花性で次々開花。ハウス栽培で安定出荷が可能。高級感があり単価が高い。', tags:['デコレーション','高級感','花酒','フリル'] },
+  { name:'ニゲラ', sub:'Nigella / Love-in-a-mist', emoji:'💙', seasons:['spring','summer'], months:'5〜6月', color:'青・白・ピンク。糸状の繊細な葉に包まれた不思議な形の花。', taste:'ほぼ無味だが独特のスモーキーな香りがある。種はスパイスとして有名。', use:'デザートやサラダのトッピング。種はスパイスとして肉料理・パンに。', grow:'こぼれ種で毎年育つ。種の収穫も楽しめる。管理が楽で有機栽培向き。', tags:['独特の形','スパイス','こぼれ種','種も利用'] },
+  { name:'ハニーサックル', sub:'Honeysuckle', emoji:'🤍', seasons:['summer'], months:'6〜7月', color:'白〜クリーム色で咲き進むと黄色に変わる。甘い強い香り。', taste:'花蜜がとても甘い。甘い香りが非常に強い。', use:'ハーブティー、シロップ、香り付けドリンクに。つる性を活かした演出も人気。', grow:'つる性植物でフェンス向き。開花期間が短く希少性が高い。', tags:['ハーブティー','甘い香り','つる性','希少'] },
+  { name:'コスモス', sub:'Cosmos', emoji:'🌸', seasons:['summer','autumn'], months:'7〜10月', color:'ピンク・白・赤・複色。繊細な花びらが風に揺れる姿が美しい。', taste:'ほぼ無味でほのかに甘い。花びらが薄く口溶けが良い。', use:'サラダやデザートの彩りに。花びらの薄さと多色展開が使いやすい。', grow:'管理が楽で大量収穫できる。遅霜まで咲き続ける長期出荷向きの優秀な品種。', tags:['サラダ','大量収穫','秋の定番','映える'] },
+  { name:'ペンタス', sub:'Pentas', emoji:'⭐', seasons:['summer','autumn'], months:'6〜10月', color:'赤・ピンク・白・紫。星形の小花がドーム状に集まって咲く。', taste:'ほぼ無味。小さな星形の見た目のかわいらしさが魅力。', use:'ケーキやドリンクの飾りに。星形の花が映える演出ができる。', grow:'真夏の暑さに非常に強い。霜が降りるまで咲き続ける長期開花品種。', tags:['夏に強い','スター形','長期開花','ドリンク飾り'] },
+  { name:'トレニア', sub:'Torenia', emoji:'💜', seasons:['summer','autumn'], months:'7〜10月', color:'紫・白・ピンクのグラデーション。唇形の上品な花。', taste:'ほぼ無味。清楚な見た目と色のコントラストが美しい。', use:'デザートのトッピング。紫と白のグラデーションが繊細で高級感を演出。', grow:'半日陰でもよく咲く。夏の陰地栽培に最適。育てやすく初心者向け。', tags:['半日陰OK','グラデーション','夏','デコレーション'] },
+  { name:'センニチコウ', sub:'Globe Amaranth', emoji:'🌺', seasons:['summer','autumn'], months:'7〜10月', color:'赤・ピンク・紫・白の球形の花。ぽってりとした独特の形。', taste:'ほぼ無味だが食感がある。口の中でプチっとした独特の食感。', use:'サラダのトッピング、ドライフラワーにしてデコレーションに。食感が面白い。', grow:'乾燥に強く管理が楽。ドライにしても色が褪せず長期利用できる。', tags:['ドライ可','球形','ユニーク','長持ち'] },
+  { name:'ペチュニア', sub:'Petunia', emoji:'🌸', seasons:['spring','summer','autumn'], months:'4〜10月', color:'赤・ピンク・白・紫・複色。大きな漏斗形の花が豪華。', taste:'ほぼ無味。色が豊富で汎用性が高く使い回しがきく。', use:'ケーキやサラダの飾りに。多彩な色が選べるため用途が広い。', grow:'高温に強く長期間開花。雨に弱いためハウスか屋根の下での栽培推奨。', tags:['多色展開','長期開花','デコレーション','汎用'] },
+  { name:'デンファレ', sub:'Dendrobium', emoji:'🌸', seasons:['spring','summer','autumn','winter'], months:'通年（ハウス）', color:'白・ピンク・紫。ラン科ならではの優雅で上品な花。', taste:'ほぼ無味。上品な見た目が高級感を演出する。', use:'高級ウェディングケーキのデコレーションに。花持ちが1〜2週間と非常に長い。', grow:'ハウス管理が必要。高単価で需要が高い。花持ちの良さから遠方出荷にも向く。', tags:['高級','ウェディング','ラン','高単価'] },
+  { name:'ハイビスカス（ローゼル）', sub:'Hibiscus / Roselle', emoji:'🌺', seasons:['autumn'], months:'8〜10月', color:'赤いガク（カリックス）が食用として利用される。花は淡いピンク。', taste:'酸味が強くクランベリーに似た風味。天然の鮮やかな赤色素を含む。', use:'ハーブティー、ジャム、シロップに。鮮やかな赤色が美しく高付加価値。', grow:'熱帯性のため温暖な地域向き。9〜10月が収穫のベストシーズン。', tags:['ハーブティー','赤色素','ジャム','酸味'] },
+  { name:'ヒマワリ', sub:'Sunflower', emoji:'🌻', seasons:['summer'], months:'7〜8月', color:'鮮やかな黄色の大輪。花びらは細長く放射状。種類も豊富。', taste:'ほんのりナッツのような風味と甘み。種は有名なスナックにもなる。', use:'サラダのトッピング、スープの飾り、バターや油に混ぜて香り付けに。', grow:'日当たりが良い場所を好む。大輪から矮性品種まで幅広く選べる。', tags:['夏の定番','大輪','種も食用','映える'] },
+  { name:'デイリリー', sub:'Daylily / Hemerocallis', emoji:'🌸', seasons:['summer'], months:'6〜8月', color:'オレンジ・黄・赤・ピンクなど豊富。1日で咲き終わる一日花。', taste:'甘みがあり食べやすい。中国料理で古くから使われる食材。', use:'炒め物、スープ、サラダに。乾燥させて金針菜（きんしんさい）として利用できる。', grow:'宿根草で毎年育つ。管理が楽で1株から多数の花が収穫できる優秀な品種。', tags:['金針菜','中華料理','宿根草','一日花'] },
+  { name:'金木犀', sub:'Osmanthus', emoji:'🟠', seasons:['autumn'], months:'9〜10月', color:'小さなオレンジ色の花が密集して咲く。甘い芳香が特徴。', taste:'フルーティーで甘い香りと甘み。桂花茶としても世界的に有名。', use:'ハーブティー、シロップ、和菓子の香り付けに。桂花茶（けいかちゃ）の材料として高人気。', grow:'常緑低木。開花期間が短いため収穫タイミングが重要。花が落ちる前に収穫する。', tags:['香り高い','秋の定番','桂花茶','シロップ'] },
+  { name:'クチナシ', sub:'Gardenia', emoji:'🤍', seasons:['summer'], months:'6〜7月', color:'白い大きな花。非常に強い甘い香りで「三白の花」のひとつ。', taste:'上品な甘みと強い香り。花びらのみ使用する。', use:'ハーブティー、デザートの飾り、シロップに。果実は黄色の天然色素（クチナシ色素）として利用。', grow:'常緑低木で日本の気候に適している。開花後の果実も黄色色素として価値がある。', tags:['黄色色素','香り高い','和食','シロップ'] },
+];
+
+/* ===== SVGアイコン（軽量・インライン）===== */
+function flowerSVG(color1, color2, cx, type) {
+  if (type === 'herb') {
+    return `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="55" rx="6" ry="22" fill="${color2}" opacity=".3"/>
+      <line x1="40" y1="72" x2="40" y2="18" stroke="${color2}" stroke-width="3" stroke-linecap="round"/>
+      <ellipse cx="26" cy="38" rx="12" ry="7" fill="${color1}" transform="rotate(-30 26 38)"/>
+      <ellipse cx="54" cy="32" rx="12" ry="7" fill="${color1}" transform="rotate(30 54 32)"/>
+      <ellipse cx="30" cy="52" rx="11" ry="6" fill="${color1}" opacity=".8" transform="rotate(-20 30 52)"/>
+      <ellipse cx="52" cy="48" rx="11" ry="6" fill="${color1}" opacity=".8" transform="rotate(20 52 48)"/>
+    </svg>`;
+  }
+  if (type === 'daisy') {
+    let petals = '';
+    for(let i=0;i<8;i++){const a=i*45;petals+=`<ellipse cx="40" cy="18" rx="6" ry="13" fill="${color1}" opacity=".9" transform="rotate(${a} 40 40)"/>`;}
+    return `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">${petals}<circle cx="40" cy="40" r="12" fill="${color2}"/></svg>`;
+  }
+  if (type === 'rose') {
+    return `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="40" cy="40" r="22" fill="${color1}" opacity=".2"/>
+      <path d="M40 18 Q52 28 52 40 Q52 55 40 62 Q28 55 28 40 Q28 28 40 18Z" fill="${color1}"/>
+      <path d="M40 24 Q50 32 50 42 Q50 53 40 58 Q30 53 30 42 Q30 32 40 24Z" fill="${color2}" opacity=".7"/>
+      <circle cx="40" cy="40" r="8" fill="${color2}" opacity=".5"/>
+    </svg>`;
+  }
+  if (type === 'lavender') {
+    return `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+      <line x1="40" y1="72" x2="40" y2="20" stroke="#86a86e" stroke-width="3" stroke-linecap="round"/>
+      <ellipse cx="40" cy="18" rx="6" ry="10" fill="${color1}"/>
+      <ellipse cx="33" cy="28" rx="5" ry="8" fill="${color1}" opacity=".8"/>
+      <ellipse cx="47" cy="28" rx="5" ry="8" fill="${color1}" opacity=".8"/>
+      <ellipse cx="36" cy="38" rx="5" ry="7" fill="${color1}" opacity=".6"/>
+      <ellipse cx="44" cy="38" rx="5" ry="7" fill="${color1}" opacity=".6"/>
+    </svg>`;
+  }
+  // default: simple 5-petal flower
+  let petals = '';
+  for(let i=0;i<5;i++){const a=i*72;petals+=`<ellipse cx="40" cy="20" rx="7" ry="13" fill="${color1}" transform="rotate(${a} 40 40)"/>`;}
+  return `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">${petals}<circle cx="40" cy="40" r="11" fill="${color2}"/></svg>`;
+}
+
+const FLOWER_STYLES = {
+  '桜':             { c1:'#ffb7c5', c2:'#fff0f3', t:'default' },
+  'パンジー・ビオラ':{ c1:'#9b59d0', c2:'#ffe066', t:'default' },
+  'ナスタチウム':    { c1:'#ff7700', c2:'#ffe066', t:'default' },
+  'カモミール':      { c1:'#fff', c2:'#ffd700', t:'daisy' },
+  'マリーゴールド':  { c1:'#ff9500', c2:'#ffe066', t:'daisy' },
+  'ラベンダー':      { c1:'#b57bee', c2:'#d8b4fe', t:'lavender' },
+  'ボリジ':          { c1:'#4f9cf9', c2:'#fff', t:'default' },
+  'コーンフラワー（矢車菊）':{ c1:'#3b82f6', c2:'#93c5fd', t:'daisy' },
+  'ズッキーニの花':  { c1:'#fbbf24', c2:'#fef08a', t:'default' },
+  'バラ':            { c1:'#f43f5e', c2:'#fda4af', t:'rose' },
+  'ダイアンサス（なでしこ）':{ c1:'#f472b6', c2:'#fff', t:'default' },
+  '食用菊':          { c1:'#fcd34d', c2:'#fef9c3', t:'daisy' },
+  'スナップドラゴン（金魚草）':{ c1:'#fb923c', c2:'#fed7aa', t:'default' },
+  'アリッサム':      { c1:'#fff', c2:'#e9d5ff', t:'daisy' },
+  'チャイブの花':    { c1:'#c084fc', c2:'#e9d5ff', t:'default' },
+  'エルダーフラワー':{ c1:'#fef3c7', c2:'#fbbf24', t:'daisy' },
+  'サフラン':        { c1:'#c084fc', c2:'#ef4444', t:'default' },
+  '桜草（プリムラ）':{ c1:'#fb7185', c2:'#ffd700', t:'default' },
+  'カタクリ':          { c1:'#d8b4fe', c2:'#f5f3ff', t:'default' },
+  'ストック':          { c1:'#f9a8d4', c2:'#fce7f3', t:'default' },
+  'デイジー':          { c1:'#ffffff', c2:'#fbbf24', t:'daisy'   },
+  '菜の花':            { c1:'#fde047', c2:'#16a34a', t:'default' },
+  'スイートバイオレット':{ c1:'#7c3aed', c2:'#ede9fe', t:'default' },
+  'カレンデュラ':      { c1:'#fb923c', c2:'#fed7aa', t:'daisy'   },
+  'リナリア':          { c1:'#c084fc', c2:'#fde68a', t:'default' },
+  'ベゴニア':          { c1:'#f43f5e', c2:'#fce7f3', t:'default' },
+  'カーネーション':    { c1:'#f472b6', c2:'#fff0f3', t:'default' },
+  'ニゲラ':            { c1:'#60a5fa', c2:'#eff6ff', t:'default' },
+  'ハニーサックル':    { c1:'#fef3c7', c2:'#fbbf24', t:'default' },
+  'コスモス':          { c1:'#fda4af', c2:'#fff1f2', t:'default' },
+  'ペンタス':          { c1:'#f472b6', c2:'#fdf2f8', t:'default' },
+  'トレニア':          { c1:'#818cf8', c2:'#e0e7ff', t:'default' },
+  'センニチコウ':      { c1:'#e879f9', c2:'#fdf4ff', t:'default' },
+  'ペチュニア':        { c1:'#a855f7', c2:'#faf5ff', t:'default' },
+  'デンファレ':        { c1:'#c084fc', c2:'#f5f3ff', t:'default' },
+  'ハイビスカス（ローゼル）':{ c1:'#dc2626', c2:'#fef2f2', t:'default' },
+  'ヒマワリ':          { c1:'#fbbf24', c2:'#78350f', t:'daisy'   },
+  'デイリリー':        { c1:'#fb923c', c2:'#fef3c7', t:'default' },
+  '金木犀':            { c1:'#f97316', c2:'#fff7ed', t:'daisy'   },
+  'クチナシ':          { c1:'#ffffff', c2:'#fef9c3', t:'rose'    },
+  // ハーブ（新規）
+  'イタリアンパセリ':  { c1:'#86efac', c2:'#16a34a', t:'herb' },
+  'ルッコラ':          { c1:'#a3e635', c2:'#3f6212', t:'herb' },
+  'セルバチコ':        { c1:'#fde047', c2:'#4a7c30', t:'herb' },
+  'シソ':              { c1:'#d946ef', c2:'#4c1d95', t:'herb' },
+  'レモングラス':      { c1:'#d9f99d', c2:'#65a30d', t:'herb' },
+  'ステビア':          { c1:'#ffffff', c2:'#166534', t:'herb' },
+  'ソサエティガーリック':{ c1:'#c4b5fd', c2:'#4f46e5', t:'herb' },
+  'ジャスミン':        { c1:'#ffffff', c2:'#fef08a', t:'herb' },
+  'センテッドゼラニウム':{ c1:'#fca5a5', c2:'#7f1d1d', t:'herb' },
+  'ヒソップ':          { c1:'#818cf8', c2:'#1e1b4b', t:'herb' },
+  'レモンバーベナ':    { c1:'#fef08a', c2:'#65a30d', t:'herb' },
+  'ブラックペパーミント':{ c1:'#6ee7b7', c2:'#1f2937', t:'herb' },
+  // ハーブ
+  'バジル':          { c1:'#4ade80', c2:'#16a34a', t:'herb' },
+  'ミント':          { c1:'#34d399', c2:'#059669', t:'herb' },
+  'ローズマリー':    { c1:'#818cf8', c2:'#4f7942', t:'herb' },
+  'タイム':          { c1:'#c084fc', c2:'#5f6f3a', t:'herb' },
+  'フェンネル':      { c1:'#fbbf24', c2:'#4a7c30', t:'herb' },
+  'セージ':          { c1:'#a3e635', c2:'#6b8f4a', t:'herb' },
+  'オレガノ':        { c1:'#f9a8d4', c2:'#5a7a42', t:'herb' },
+  'チャイブ':        { c1:'#c084fc', c2:'#4a7c30', t:'herb' },
+  'レモンバーム':    { c1:'#bef264', c2:'#4d7c1a', t:'herb' },
+  'ディル':          { c1:'#fde047', c2:'#4a7c30', t:'herb' },
+  'コリアンダー（パクチー）':{ c1:'#fff', c2:'#4a7c30', t:'herb' },
+};
+
+function getFlowerSVG(name) {
+  const s = FLOWER_STYLES[name];
+  if (!s) return `<div style="font-size:2.4rem;text-align:center;line-height:72px">🌸</div>`;
+  return flowerSVG(s.c1, s.c2, 40, s.t);
+}
+
+/* ===== ハーブデータ ===== */
+const BASE_HERBS = [
+  { name:'バジル', sub:'Basil', emoji:'🌿', seasons:['summer'], months:'6〜9月', color:'鮮やかな緑色の葉。花は白〜薄紫の小花が穂状につく。', taste:'甘くスパイシーな香り。クローブに似た風味。花は葉より穏やか。', use:'花はサラダ、パスタ、ピザのトッピングに。バジルオイルやジェノベーゼソースの香り付けに。', grow:'夏の高温を好む。寒さに弱いため5月以降に定植。花が咲き始めたら摘み取ると葉が長く使える。', tags:['イタリア料理','香り','夏のハーブ','初心者向け'] },
+  { name:'ミント', sub:'Mint', emoji:'🍃', seasons:['spring','summer','autumn'], months:'5〜10月', color:'緑色の葉に白〜薄紫の小花。ペパーミント・スペアミントなど品種多数。', taste:'清涼感のある爽やかな香りと味。品種により強さが異なる。', use:'ハーブティー、モヒート、デザートのアクセントに。葉も花も食用可。', grow:'繁殖力が強くプランター栽培推奨。地植えにすると広がりすぎる。水を好む。', tags:['ハーブティー','カクテル','ドリンク','繁殖旺盛'] },
+  { name:'ローズマリー', sub:'Rosemary', emoji:'🌿', seasons:['spring','autumn','winter'], months:'3〜5月・10〜11月', color:'青紫〜白の小さな唇形の花。常緑の針状の葉が特徴。', taste:'強い松脂系の香りと苦み。肉料理との相性が抜群。', use:'肉・魚料理の香り付け、フォカッチャ、オリーブオイル漬けに。乾燥させて長期保存可能。', grow:'地中海原産で乾燥・日当たりを好む。過湿に注意。常緑で年中葉が使える優秀なハーブ。', tags:['肉料理','パン','ドライ可','常緑'] },
+  { name:'タイム', sub:'Thyme', emoji:'🌱', seasons:['spring','summer'], months:'5〜7月', color:'淡いピンク〜白の小花。這い性と立ち性がある。', taste:'スパイシーで爽やかな香り。レモンタイムは柑橘系の香り。', use:'スープ、煮込み料理、ブーケガルニの定番ハーブ。花はサラダやチーズのトッピングに。', grow:'乾燥に強く手がかからない。鉢植えでも育てやすい。品種が豊富で観賞用にもなる。', tags:['煮込み料理','スープ','ブーケガルニ','育てやすい'] },
+  { name:'ラベンダー', sub:'Lavender', emoji:'💜', seasons:['summer'], months:'6〜7月', color:'淡い紫色の穂状の花。乾燥してもきれいな色が残る。', taste:'強い甘い香りと花蜜の甘み。料理には少量で十分。', use:'ハーブティー、クッキー、ハチミツ漬け、ドレッシングのアクセントに。', grow:'水はけのよい土を好む。過湿に弱いため高畝推奨。収穫は開花直前が香りが強い。', tags:['ハーブティー','アロマ','ドライ可','香り高い'] },
+  { name:'フェンネル', sub:'Fennel', emoji:'🌾', seasons:['summer','autumn'], months:'7〜9月', color:'黄色い小花が傘状に集まって咲く（散形花序）。葉は羽状で繊細。', taste:'アニスに似た甘い香り。魚料理との相性が非常によい。', use:'魚料理、サラダ、スープに。種・葉・花すべて使用可。ハーブティーにも。', grow:'背丈が高くなるため広いスペースが必要。直根性のため移植を嫌う。直まき推奨。', tags:['魚料理','全草使用','背丈大きい','直まき'] },
+  { name:'セージ', sub:'Sage', emoji:'🌿', seasons:['spring','summer'], months:'5〜6月', color:'青紫〜白・ピンクの唇形の花。シルバーグリーンの葉が個性的。', taste:'やや苦みのある樟脳系の香り。豚肉やソーセージとの相性が抜群。', use:'肉料理の臭み消し、バターソテー（ブラウンバターソース）、詰め物料理に。', grow:'乾燥に強く日当たりを好む。蒸れると枯れやすいため風通しに注意。宿根草で毎年育つ。', tags:['肉料理','バターソース','宿根草','乾燥に強い'] },
+  { name:'オレガノ', sub:'Oregano', emoji:'🌱', seasons:['summer'], months:'7〜8月', color:'白〜薄ピンクの小花が穂状につく。葉は丸みがある。', taste:'スパイシーで少し苦みのある強い香り。乾燥すると香りが増す。', use:'ピザ、パスタ、トマト料理の定番ハーブ。乾燥させるとより香り高くなる。', grow:'乾燥に強く日当たりを好む。地植えで旺盛に育つ。ドライハーブとしての需要も高い。', tags:['ピザ','イタリア料理','ドライ可','乾燥に強い'] },
+  { name:'チャイブ', sub:'Chive', emoji:'🟣', seasons:['spring','summer'], months:'4〜6月', color:'薄紫〜ピンク紫。丸い球形の花が茎の先につく。', taste:'玉ねぎ・にんにくに似た優しい風味。花は葉より香りが穏やか。', use:'サラダ、スープ、クリームチーズに。酢漬けにすると美しいピンク色になる。', grow:'宿根草で毎年育つ。管理が楽。葉も食用として出荷できる優秀なハーブ。', tags:['ハーブ','酢漬け','宿根草','有機向き'] },
+  { name:'レモンバーム', sub:'Lemon Balm', emoji:'🍋', seasons:['spring','summer'], months:'6〜8月', color:'白い小さな花が葉腋につく。葉はミントに似た形でシワがある。', taste:'レモンに似た爽やかな香り。スッキリとした甘さ。', use:'ハーブティー、デザートの香り付け、フレッシュドリンクのアクセントに。', grow:'日当たり〜半日陰でよく育つ。ミント同様繁殖力が強い。プランター栽培推奨。', tags:['ハーブティー','柑橘系','育てやすい','初心者向け'] },
+  { name:'ディル', sub:'Dill', emoji:'🌾', seasons:['spring','summer','autumn'], months:'5〜9月', color:'黄色の小花が傘状に集まる。葉は糸状で繊細。', taste:'アニスに似た爽やかな香り。魚・卵料理との相性が良い。', use:'スモークサーモン、卵料理、漬物の香り付けに定番。ピクルスには種も使用。', grow:'直まきで育てやすい。移植を嫌うため直根に注意。フェンネルと交雑するため離して植える。', tags:['魚料理','ピクルス','北欧料理','直まき'] },
+  { name:'コリアンダー（パクチー）', sub:'Coriander', emoji:'🌿', seasons:['spring','autumn'], months:'5〜6月・9〜10月', color:'白〜薄ピンクの小花が傘状につく。葉は独特の形。', taste:'独特の香り（好き嫌いが分かれる）。花は葉より香りが弱め。', use:'エスニック料理全般のトッピング。花はサラダに。種はスパイスとして使用。', grow:'高温と低温の両方が苦手。春と秋の2シーズンがベスト。とう立ちしやすい。', tags:['エスニック料理','パクチー','スパイス','2シーズン'] },
+  { name:'イタリアンパセリ', sub:'Italian Parsley', emoji:'🌿', seasons:['spring','autumn','winter'], months:'4〜6月・9〜11月', color:'小さな白い花が傘状に集まる。葉は平らで艶やかな濃緑色。', taste:'すっきりとした爽やかな苦み。カーリーパセリより香りがマイルド。', use:'料理の仕上げ、サラダ、スープ、ソースに幅広く使用。花もサラダのアクセントに。', grow:'二年草。春と秋の2シーズン栽培可能。水分を好むが過湿に注意。直まきが発芽しやすい。', tags:['彩り','西洋料理','葉も使用','二年草'] },
+  { name:'ルッコラ', sub:'Arugula', emoji:'🥗', seasons:['spring','autumn'], months:'4〜6月・9〜11月', color:'白〜クリーム色の4枚花弁。花脈に紫色の筋が入る。', taste:'ごまに似たナッツ風味と適度な辛みとほろ苦さ。花は葉より穏やかな味。', use:'サラダのメインとして、ピザやパスタのトッピングに。花も飾りとして食べられる。', grow:'生育が早く種まきから約1ヶ月で収穫可能。春と秋のシーズン栽培。暑さで辛みが増す。', tags:['サラダ','ピザ','生育早い','2シーズン'] },
+  { name:'セルバチコ', sub:'Wild Arugula', emoji:'🌼', seasons:['spring','autumn'], months:'4〜6月・9〜11月', color:'クリーム色に紫の筋が入る繊細な花。ルッコラより小ぶり。', taste:'ルッコラより強い風味と辛み、ほろ苦さ。野性味のある独特の香り。', use:'サラダ、ピザ、パスタのアクセントに。花はエディブルフラワーとして彩りを添える。', grow:'ルッコラの野生種。耐寒性・耐暑性ともに強く育てやすい。こぼれ種で増える。', tags:['ワイルド','サラダ','強健','こぼれ種'] },
+  { name:'シソ', sub:'Perilla / Shiso', emoji:'🟣', seasons:['summer','autumn'], months:'7〜9月', color:'赤紫色（赤シソ）または白〜薄紫（青シソ）の小花が穂状につく。', taste:'独特の爽やかな香り。青シソは爽快感、赤シソは深みのある香り。', use:'刺身の薬味、天ぷら、おにぎり、梅干しの着色に。花穂も薬味として使用。', grow:'日本の気候に合った育てやすいハーブ。こぼれ種で毎年生える。アブラムシに注意。', tags:['和食','薬味','着色','こぼれ種'] },
+  { name:'レモングラス', sub:'Lemongrass', emoji:'🌾', seasons:['summer'], months:'7〜9月', color:'稲穂に似た繊細な花序。主に葉・茎を利用するハーブ。', taste:'レモンに似た爽やかな柑橘系の香り。清涼感とほのかな甘み。', use:'タイ料理、スープ（トムヤム）、ハーブティー、ドリンクに。茎の下部をすりおろして利用。', grow:'熱帯原産で高温多湿を好む。日本では鉢植えで室内越冬がおすすめ。大株になる。', tags:['タイ料理','ハーブティー','柑橘系','熱帯性'] },
+  { name:'ステビア', sub:'Stevia', emoji:'🍃', seasons:['summer','autumn'], months:'8〜10月', color:'白い小さな花が密集して咲く。葉は楕円形で緑色。', taste:'砂糖の200〜300倍の天然甘味成分ステビオシドを含む。カロリーゼロの天然甘味料。', use:'ハーブティーの甘み付け、砂糖代替として料理・お菓子に。乾燥葉は甘みが増す。', grow:'日当たりと水はけを好む。霜に弱いため秋に刈り取って室内越冬。挿し芽で増やせる。', tags:['甘味料','ダイエット','ハーブティー','天然甘味'] },
+  { name:'ソサエティガーリック', sub:'Society Garlic', emoji:'💜', seasons:['spring','summer','autumn'], months:'5〜10月', color:'薄紫〜ライラック色の星形の花が球状に集まって咲く。', taste:'にんにくに似た香りと優しい辛み。花はガーリック風味で食べやすい。', use:'サラダのトッピング、料理の飾り付けに。にんにくの代替として風味付けにも使える。', grow:'多年草で手がかからない。球根で増える。観賞用としても人気が高い。', tags:['ガーリック風味','多年草','球根','観賞兼用'] },
+  { name:'ジャスミン', sub:'Jasmine', emoji:'🤍', seasons:['spring','summer'], months:'5〜7月', color:'白い5弁の星形の花。清楚で華やかな印象。', taste:'甘く濃厚なフローラルの香り。茉莉花茶の原料としておなじみ。', use:'ハーブティー（ジャスミンティー）、スイーツの香り付けに。精油はアロマセラピーにも。', grow:'つる性植物でトレリスや格子に這わせて育てる。日当たりと肥沃な土を好む。', tags:['ハーブティー','香り高い','つる性','茉莉花'] },
+  { name:'センテッドゼラニウム', sub:'Scented Geranium', emoji:'🌸', seasons:['spring','summer','autumn'], months:'5〜10月', color:'淡いピンク〜白の小花。葉の形と香りに多くの品種がある。', taste:'ローズ・レモン・ミント・リンゴなど品種によって様々な香り。', use:'ハーブティー、スイーツ、ジャム、シロップの香り付けに。葉も食用可。', grow:'日当たりと乾燥を好む。過湿に弱い。挿し芽で増やしやすく、コンテナ栽培に向く。', tags:['香り多彩','スイーツ','品種豊富','コンテナ向き'] },
+  { name:'ヒソップ', sub:'Hyssop', emoji:'💙', seasons:['summer','autumn'], months:'7〜9月', color:'青紫〜ピンク・白の唇形の花が穂状につく。ミツバチを呼ぶ。', taste:'薄荷に似たスパイシーな香りとほのかな苦み。ほんのりとした甘み。', use:'ハーブティー、リキュールの香り付けに。肉料理の臭み消し、サラダに。薬用としても利用。', grow:'乾燥した土壌と日当たりを好む。宿根草で毎年育つ。耐寒性がある。', tags:['ハーブティー','薬用','宿根草','ミツバチ誘引'] },
+  { name:'レモンバーベナ', sub:'Lemon Verbena', emoji:'🍋', seasons:['summer','autumn'], months:'7〜9月', color:'白〜薄紫の小花が穂状に集まる。葉は細長く強い芳香を持つ。', taste:'レモンに似た非常に強い爽やかな香り。ハーブ類の中でも特に香りが強い。', use:'ハーブティー、ドリンク、魚・鶏料理の香り付けに。ポプリやアロマにも。', grow:'南米原産。霜に弱く日本では落葉性。冬は室内に取り込む。鉢植えで管理しやすい。', tags:['ハーブティー','強香','南米原産','落葉性'] },
+  { name:'ブラックペパーミント', sub:'Black Peppermint', emoji:'🖤', seasons:['summer','autumn'], months:'7〜9月', color:'薄紫〜紫の穂状の花。茎が黒みがかった赤紫色で個性的。', taste:'ペパーミントの中でも特に清涼感が強い。メントール含有量が高い。', use:'ハーブティー、アイスクリーム、チョコレートとの相性が抜群。モヒートにも。', grow:'強健で繁殖力旺盛。プランター栽培推奨。地下茎で広がるため仕切りが必要。', tags:['清涼感強い','ハーブティー','チョコレート','繁殖旺盛'] },
+];
+
+let currentCategory = 'flower';
+
+function switchCategory(cat) {
+  currentCategory = cat;
+  document.getElementById('catFlower').classList.toggle('active', cat === 'flower');
+  document.getElementById('catHerb').classList.toggle('active',   cat === 'herb');
+  if (cat === 'flower') {
+    document.getElementById('headerTitle').textContent = '🌸 エディブルフラワー管理';
+    document.getElementById('headerSub').textContent   = '食べられる花の開花時期・詳細情報';
+  } else {
+    document.getElementById('headerTitle').textContent = '🌿 ハーブ管理';
+    document.getElementById('headerSub').textContent   = 'ハーブの収穫時期・詳細情報';
+  }
+  currentSeason = 'all';
+  document.querySelectorAll('.season-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.tab-all').classList.add('active');
+  document.getElementById('searchInput').value = '';
+  renderCards();
+}
+
+/* ===== ユーザー追加データ（localStorage）===== */
+function getUserFlowers() {
+  try { return JSON.parse(localStorage.getItem('userFlowers') || '[]'); } catch { return []; }
+}
+function saveUserFlowers(arr) {
+  localStorage.setItem('userFlowers', JSON.stringify(arr));
+}
+function getUserHerbs() {
+  try { return JSON.parse(localStorage.getItem('userHerbs') || '[]'); } catch { return []; }
+}
+function saveUserHerbs(arr) {
+  localStorage.setItem('userHerbs', JSON.stringify(arr));
+}
+
+function getAllItems() {
+  if (currentCategory === 'flower') return [...BASE_FLOWERS, ...getUserFlowers()];
+  return [...BASE_HERBS, ...getUserHerbs()];
+}
+
+/* ===== 管理パネル ===== */
+function toggleAdmin() {
+  const panel = document.getElementById('adminPanel');
+  const btn   = document.getElementById('adminBtn');
+  const open  = panel.classList.toggle('open');
+  btn.classList.toggle('active', open);
+  if (open) renderAddedList();
+}
+
+function renderAddedList() {
+  const arr = currentCategory === 'flower' ? getUserFlowers() : getUserHerbs();
+  const el  = document.getElementById('addedList');
+  if (arr.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = `<h3>✅ 追加済みの花（${arr.length}件）</h3>` +
+    arr.map((f, i) => `
+      <div class="added-item">
+        <span>${f.emoji || '🌸'} <span class="item-name">${f.name}</span><span class="item-months">📅 ${f.months || '—'}</span></span>
+        <button class="del-btn" onclick="deleteFlower(${i})" title="削除">🗑️</button>
+      </div>`).join('');
+}
+
+function addFlower(e) {
+  e.preventDefault();
+  const seasons = [...document.querySelectorAll('input[name="seasons"]:checked')].map(c => c.value);
+  const tagsRaw = document.getElementById('f-tags').value;
+  const flower = {
+    name:   document.getElementById('f-name').value.trim(),
+    sub:    document.getElementById('f-sub').value.trim() || '',
+    emoji:  document.getElementById('f-emoji').value.trim() || '🌸',
+    seasons: seasons.length ? seasons : ['spring'],
+    months: document.getElementById('f-months').value.trim() || '—',
+    color:  document.getElementById('f-color').value.trim() || '—',
+    taste:  document.getElementById('f-taste').value.trim() || '—',
+    use:    document.getElementById('f-use').value.trim() || '—',
+    grow:   document.getElementById('f-grow').value.trim() || '—',
+    tags:   tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [],
+    userAdded: true,
+  };
+  const arr = currentCategory === 'flower' ? getUserFlowers() : getUserHerbs();
+  arr.push(flower);
+  currentCategory === 'flower' ? saveUserFlowers(arr) : saveUserHerbs(arr);
+  e.target.reset();
+  renderAddedList();
+  renderCards();
+  showToast(`「${flower.name}」を追加しました 🌸`);
+}
+
+function deleteFlower(idx) {
+  const arr = currentCategory === 'flower' ? getUserFlowers() : getUserHerbs();
+  const name = arr[idx].name;
+  arr.splice(idx, 1);
+  currentCategory === 'flower' ? saveUserFlowers(arr) : saveUserHerbs(arr);
+  renderAddedList();
+  renderCards();
+  showToast(`「${name}」を削除しました`);
+}
+
+/* ===== メインUI ===== */
+let currentSeason = 'all';
+
+function filterSeason(season) {
+  currentSeason = season;
+  document.querySelectorAll('.season-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.tab-' + (season === 'all' ? 'all' : season)).classList.add('active');
+  renderCards();
+}
+
+function renderCards() {
+  const q    = document.getElementById('searchInput').value.toLowerCase();
+  const grid = document.getElementById('grid');
+  const all  = getAllItems();
+
+  let filtered = all.filter(f => {
+    const matchSeason = currentSeason === 'all' || f.seasons.includes(currentSeason);
+    const matchSearch = q === '' || f.name.includes(q) || (f.sub||'').toLowerCase().includes(q) || f.tags.some(t => t.includes(q));
+    return matchSeason && matchSearch;
+  });
+
+  filtered.sort((a, b) => {
+    const getFirst = m => parseInt((m||'12').replace(/[^0-9]/g, '').slice(0,2)) || 12;
+    return getFirst(a.months) - getFirst(b.months);
+  });
+
+  document.getElementById('flowerCount').textContent = `${filtered.length} 種類`;
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div class="no-result" style="grid-column:1/-1">🌱 該当する花が見つかりませんでした</div>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(f => `
+    <div class="card ${f.userAdded ? 'user-added' : ''}" onclick='openModal(${JSON.stringify(JSON.stringify(f))})'>
+      ${f.userAdded ? '<div class="user-badge">✚ 追加済み</div>' : ''}
+      <div class="flower-img">${getFlowerSVG(f.name)}</div>
+      <div class="name">${f.name}</div>
+      <div class="sub">${f.sub || ''}</div>
+      <div class="months">📅 ${f.months}</div>
+      <div class="tags">
+        ${f.seasons.map(s => `<span class="tag" style="background:${SEASON_COLORS[s]}22;color:${SEASON_COLORS[s]}">${{spring:'春',summer:'夏',autumn:'秋',winter:'冬'}[s]}</span>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function openModal(jsonStr) {
+  const f = JSON.parse(jsonStr);
+  document.getElementById('m-emoji').innerHTML = `<div class="modal-img">${getFlowerSVG(f.name)}</div>`;
+  document.getElementById('m-name').textContent   = f.name;
+  document.getElementById('m-sub').textContent    = f.sub || '';
+  document.getElementById('m-months').textContent = '📅 開花時期：' + f.months;
+  document.getElementById('m-color').textContent  = f.color;
+  document.getElementById('m-taste').textContent  = f.taste;
+  document.getElementById('m-use').textContent    = f.use;
+  document.getElementById('m-grow').textContent   = f.grow;
+  document.getElementById('m-tags').innerHTML = (f.tags||[]).map(t => `<span class="modal-tag">${t}</span>`).join('');
+  document.getElementById('overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(e) { if (e.target === document.getElementById('overlay')) closeModalBtn(); }
+function closeModalBtn() { document.getElementById('overlay').classList.remove('open'); document.body.style.overflow = ''; }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModalBtn(); });
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* ===== ページ切り替え ===== */
+let currentPage = 'list';
+
+function showPage(page) {
+  currentPage = page;
+  document.getElementById('listPage').style.display    = page === 'list'     ? 'block' : 'none';
+  document.getElementById('calendarPage').style.display = page === 'calendar' ? 'block' : 'none';
+  document.getElementById('navList').classList.toggle('active',     page === 'list');
+  document.getElementById('navCalendar').classList.toggle('active', page === 'calendar');
+  // 管理パネルはリスト表示時のみ
+  if (page === 'calendar') {
+    document.getElementById('adminPanel').classList.remove('open');
+    document.getElementById('adminBtn').classList.remove('active');
+    renderCalendar();
+  }
+}
+
+/* ===== 開花月パース ===== */
+function parseBloomMonths(monthsStr) {
+  const result = new Set();
+  if (!monthsStr) return result;
+  if (monthsStr.includes('通年')) {
+    for (let i = 1; i <= 12; i++) result.add(i);
+    return result;
+  }
+  const parts = monthsStr.split('・');
+  for (const part of parts) {
+    const rangeMatch = part.match(/(\d+)〜(\d+)月/);
+    const singleMatch = part.match(/(\d+)月/);
+    if (rangeMatch) {
+      const s = parseInt(rangeMatch[1]), e = parseInt(rangeMatch[2]);
+      for (let m = s; m <= e; m++) result.add(m);
+    } else if (singleMatch) {
+      result.add(parseInt(singleMatch[1]));
+    }
+  }
+  return result;
+}
+
+/* ===== カレンダー描画 ===== */
+function renderCalendar() {
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1; // 1-indexed
+  const MONTH_NAMES = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+  // ── 月ヘッダー ──
+  document.getElementById('ganttMonthHeader').innerHTML =
+    MONTH_NAMES.map((m, i) =>
+      `<div class="gantt-month${i + 1 === currentMonth ? ' current-month' : ''}">${m}</div>`
+    ).join('');
+
+  // ── 今月バッジ ──
+  document.getElementById('todayMonthBadge').textContent = `📅 ${currentMonth}月`;
+
+  // ── 全アイテム（花＋ハーブ）──
+  const allFlowers = [...BASE_FLOWERS, ...getUserFlowers()];
+  const allHerbs   = [...BASE_HERBS,   ...getUserHerbs()];
+
+  // 今月咲いているカード
+  const todayFlowers = allFlowers.filter(f => parseBloomMonths(f.months).has(currentMonth));
+  const todayHerbs   = allHerbs  .filter(f => parseBloomMonths(f.months).has(currentMonth));
+
+  const todayHTML = [
+    ...todayFlowers.map(f => todayCardHTML(f, false)),
+    ...todayHerbs  .map(f => todayCardHTML(f, true))
+  ].join('');
+  document.getElementById('todayCards').innerHTML =
+    todayHTML || '<div style="color:rgba(255,255,255,0.8);font-size:0.9rem">現在開花中のものはありません</div>';
+
+  // ── ガントチャート ──
+  let ganttHTML = '';
+
+  // エディブルフラワーセクション
+  ganttHTML += `<div class="gantt-section-title">🌸 エディブルフラワー</div>`;
+  const sortedFlowers = [...allFlowers].sort((a,b) => {
+    const first = m => parseInt((m||'12').replace(/[^0-9]/,'').slice(0,2)) || 12;
+    return first(a.months) - first(b.months);
+  });
+  ganttHTML += sortedFlowers.map(f => ganttRowHTML(f, false, currentMonth)).join('');
+
+  // ハーブセクション
+  ganttHTML += `<div class="gantt-section-title">🌿 ハーブ</div>`;
+  const sortedHerbs = [...allHerbs].sort((a,b) => {
+    const first = m => parseInt((m||'12').replace(/[^0-9]/,'').slice(0,2)) || 12;
+    return first(a.months) - first(b.months);
+  });
+  ganttHTML += sortedHerbs.map(f => ganttRowHTML(f, true, currentMonth)).join('');
+
+  document.getElementById('ganttBody').innerHTML = ganttHTML;
+}
+
+function todayCardHTML(f, isHerb) {
+  return `<div class="today-card${isHerb ? ' herb-card' : ''}" onclick='openModal(${JSON.stringify(JSON.stringify(f))})'>
+    <div class="tc-svg">${getFlowerSVG(f.name)}</div>
+    <div class="tc-info">
+      <div class="tc-name">${f.name}</div>
+      <div class="tc-sub">${f.sub || ''}</div>
+      <div class="tc-badge">${isHerb ? '🌿 ハーブ' : '🌸 花'}</div>
+    </div>
+  </div>`;
+}
+
+function ganttRowHTML(f, isHerb, currentMonth) {
+  const bloomMonths = parseBloomMonths(f.months);
+  const cells = Array.from({length: 12}, (_, i) => {
+    const m = i + 1;
+    const inBloom = bloomMonths.has(m);
+    const isCurrent = m === currentMonth;
+    let cls = inBloom ? (isHerb ? 'gantt-cell bloom herb' : 'gantt-cell bloom') : 'gantt-cell empty';
+    if (isCurrent) cls += ' current';
+    return `<div class="${cls}"></div>`;
+  }).join('');
+  return `<div class="gantt-row" onclick='openModal(${JSON.stringify(JSON.stringify(f))})'>
+    <div class="gantt-row-name" title="${f.name}">${f.name}</div>
+    <div class="gantt-row-bars">${cells}</div>
+  </div>`;
+}
+
+renderCards();
+
+// ── 天気ウィジェット（京都市西京区大原野） ──
+const WEATHER_CODES = {
+  0:  {label:'快晴',           icon:'☀️'},
+  1:  {label:'晴れ',           icon:'🌤️'},
+  2:  {label:'一部くもり',     icon:'⛅'},
+  3:  {label:'くもり',         icon:'☁️'},
+  45: {label:'霧',             icon:'🌫️'},
+  48: {label:'霧氷',           icon:'🌫️'},
+  51: {label:'霧雨（弱）',     icon:'🌦️'},
+  53: {label:'霧雨',           icon:'🌦️'},
+  55: {label:'霧雨（強）',     icon:'🌦️'},
+  61: {label:'小雨',           icon:'🌧️'},
+  63: {label:'雨',             icon:'🌧️'},
+  65: {label:'大雨',           icon:'🌧️'},
+  71: {label:'小雪',           icon:'🌨️'},
+  73: {label:'雪',             icon:'❄️'},
+  75: {label:'大雪',           icon:'❄️'},
+  77: {label:'霧雪',           icon:'🌨️'},
+  80: {label:'にわか雨（弱）', icon:'🌦️'},
+  81: {label:'にわか雨',       icon:'🌦️'},
+  82: {label:'激しいにわか雨', icon:'⛈️'},
+  85: {label:'にわか雪',       icon:'🌨️'},
+  86: {label:'激しいにわか雪', icon:'❄️'},
+  95: {label:'雷雨',           icon:'⛈️'},
+  96: {label:'雷雨（雹）',     icon:'⛈️'},
+  99: {label:'激しい雷雨',     icon:'⛈️'},
+};
+
+function getWeatherInfo(code) {
+  if (WEATHER_CODES[code]) return WEATHER_CODES[code];
+  const keys = Object.keys(WEATHER_CODES).map(Number).sort((a,b)=>a-b);
+  for (const k of keys) { if (code <= k) return WEATHER_CODES[k]; }
+  return {label:'不明', icon:'🌡️'};
+}
+
+const WEEK_DAYS = ['日','月','火','水','木','金','土'];
+
+async function loadWeather() {
+  const lat = 34.9516, lon = 135.6484;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
+    + `&current=temperature_2m,apparent_temperature,weather_code,relative_humidity_2m,wind_speed_10m`
+    + `&daily=weather_code,temperature_2m_max,temperature_2m_min`
+    + `&timezone=Asia%2FTokyo&forecast_days=7`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('fetch error');
+    const data = await res.json();
+    renderWeather(data);
+  } catch(e) {
+    document.getElementById('weatherContent').innerHTML =
+      '<div class="weather-error">⚠️ 天気情報を取得できませんでした（ネットワーク接続を確認してください）</div>';
+  }
+}
+
+function renderWeather(data) {
+  const cur   = data.current;
+  const daily = data.daily;
+  const w = getWeatherInfo(cur.weather_code);
+
+  const todayHTML = `
+    <div class="weather-today">
+      <div class="weather-today-icon">${w.icon}</div>
+      <div class="weather-today-info">
+        <div class="weather-today-temp">${Math.round(cur.temperature_2m)}°C</div>
+        <div class="weather-today-desc">${w.label}</div>
+        <div class="weather-today-sub">体感 ${Math.round(cur.apparent_temperature)}°C　湿度 ${cur.relative_humidity_2m}%　風速 ${cur.wind_speed_10m} km/h</div>
+      </div>
+    </div>`;
+
+  const weeklyHTML = daily.time.map((dateStr, i) => {
+    const d   = new Date(dateStr + 'T00:00:00+09:00');
+    const dow = WEEK_DAYS[d.getDay()];
+    const dw  = getWeatherInfo(daily.weather_code[i]);
+    const isToday = i === 0;
+    const label = isToday ? '今日' : `${d.getMonth()+1}/${d.getDate()}<br>(${dow})`;
+    return `<div class="weather-day${isToday?' today':''}">
+      <div class="weather-day-name">${label}</div>
+      <div class="weather-day-icon">${dw.icon}</div>
+      <div>
+        <span class="weather-day-max">${Math.round(daily.temperature_2m_max[i])}°</span>
+        <span class="weather-sep"> / </span>
+        <span class="weather-day-min">${Math.round(daily.temperature_2m_min[i])}°</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('weatherContent').innerHTML =
+    todayHTML + `<div class="weather-weekly">${weeklyHTML}</div>`;
+}
+
+loadWeather();
+</script>
+</body>
+</html>
