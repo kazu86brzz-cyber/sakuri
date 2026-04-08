@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>エディブルフラワー・ハーブ管理</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #fdf6f0; color: #333; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #fdf6f0; color: #333; -webkit-text-size-adjust: 100%; }
+  button, [role="button"] { touch-action: manipulation; }
 
   header {
     background: linear-gradient(135deg, #f9a8d4, #fbbf24, #86efac);
@@ -432,6 +433,148 @@
     opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 200;
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ===== 写真表示 ===== */
+  .flower-photo {
+    width: 72px; height: 72px;
+    object-fit: cover; border-radius: 14px;
+    display: block; margin: 0 auto;
+    opacity: 0; transition: opacity 0.35s ease;
+  }
+  .flower-photo.loaded { opacity: 1; }
+  .modal-flower-photo {
+    width: 150px; height: 150px;
+    object-fit: cover; border-radius: 20px;
+    display: block; margin: 0 auto 14px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+  }
+  .photo-skeleton {
+    width: 72px; height: 72px;
+    border-radius: 14px; margin: 0 auto;
+    background: linear-gradient(90deg, #f3f4f6 25%, #e9ecef 50%, #f3f4f6 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shine 1.4s ease infinite;
+  }
+  @keyframes skeleton-shine {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* ===== スマホ最適化 ===== */
+  @media (max-width: 640px) {
+
+    /* ── ヘッダー ── */
+    header {
+      padding: 16px 16px 14px;
+    }
+    header h1 { font-size: 1.25rem; }
+    header p  { font-size: 0.78rem; }
+
+    /* 管理ボタン：絶対配置→通常フローへ */
+    .admin-btn {
+      position: static;
+      transform: none;
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 0.8rem;
+      padding: 7px 16px;
+    }
+    .category-tabs { margin-top: 10px; }
+    .cat-tab { padding: 6px 16px; font-size: 0.82rem; }
+
+    /* ── ページナビ ── */
+    .page-nav { padding: 8px 12px; gap: 6px; }
+    .page-nav-btn { padding: 8px 16px; font-size: 0.82rem; }
+
+    /* ── 天気ウィジェット ── */
+    .weather-widget { padding: 10px 12px 0; }
+    .weather-widget-inner { padding: 12px 14px 10px; }
+    .weather-today { gap: 12px; margin-bottom: 12px; padding-bottom: 12px; }
+    .weather-today-icon { font-size: 2rem; }
+    .weather-today-temp { font-size: 1.6rem; }
+    .weather-today-desc { font-size: 0.82rem; }
+    .weather-today-sub  { font-size: 0.7rem; }
+    .weather-day { min-width: 58px; padding: 8px 4px; }
+
+    /* ── 季節タブ ── */
+    .season-tabs { padding: 12px 10px 0; gap: 5px; }
+    .season-tab  { padding: 7px 12px; font-size: 0.8rem; }
+
+    /* ── 検索ボックス ── */
+    .search-box { padding: 0 12px; }
+    .search-box input { padding: 10px 14px; font-size: 0.88rem; }
+
+    /* ── カードグリッド ── */
+    .grid {
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+      padding: 14px 12px 90px;
+    }
+    .card { padding: 14px 10px 10px; border-radius: 14px; }
+    .card .flower-img { width: 58px; height: 58px; }
+    .card .emoji { font-size: 2rem; }
+    .card .name  { font-size: 0.9rem; }
+    .card .sub   { font-size: 0.7rem; }
+
+    /* ── モーダル：ボトムシート形式 ── */
+    .overlay {
+      padding: 0;
+      align-items: flex-end;
+    }
+    .modal {
+      border-radius: 24px 24px 0 0;
+      padding: 24px 18px 36px;
+      max-height: 88vh;
+      width: 100%;
+      max-width: 100%;
+    }
+    .modal-close { top: 14px; right: 16px; font-size: 1.3rem; }
+    .modal-emoji { font-size: 2.6rem; margin-bottom: 8px; }
+    .modal-name  { font-size: 1.2rem; }
+    .modal-sub   { font-size: 0.82rem; }
+    .modal-section p { font-size: 0.88rem; }
+
+    /* ── 管理パネル ── */
+    .admin-panel { padding: 16px 14px; }
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+    .form-group.full { grid-column: 1; }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      font-size: 1rem; /* iOS zoom 防止 */
+      padding: 10px 12px;
+    }
+    .add-btn { width: 100%; text-align: center; padding: 12px; }
+
+    /* ── カレンダーページ ── */
+    #calendarPage { padding: 14px 10px 70px; }
+    .cal-today-section {
+      padding: 16px 14px;
+      border-radius: 16px;
+      margin-bottom: 18px;
+    }
+    .cal-today-section h2 { font-size: 1rem; }
+    .today-cards { gap: 7px; }
+    .today-card { padding: 8px 10px; gap: 8px; }
+    .today-card .tc-svg { width: 30px; height: 30px; }
+    .today-card .tc-name { font-size: 0.82rem; }
+
+    /* ガントチャート：ラベル幅を狭める */
+    .gantt-row-name { width: 80px; font-size: 0.72rem; }
+    .gantt-label-col { width: 80px; }
+    .gantt-cell { min-width: 18px; height: 18px; }
+
+    /* ── トースト ── */
+    .toast {
+      bottom: 16px;
+      font-size: 0.82rem;
+      padding: 10px 18px;
+      width: calc(100% - 32px);
+      text-align: center;
+    }
+  }
 </style>
 </head>
 <body>
@@ -896,22 +1039,38 @@ function renderCards() {
     return;
   }
 
-  grid.innerHTML = filtered.map(f => `
+  grid.innerHTML = filtered.map(f => {
+    const fn = f.name.replace(/"/g, '&quot;');
+    return `
     <div class="card ${f.userAdded ? 'user-added' : ''}" onclick='openModal(${JSON.stringify(JSON.stringify(f))})'>
       ${f.userAdded ? '<div class="user-badge">✚ 追加済み</div>' : ''}
-      <div class="flower-img">${getFlowerSVG(f.name)}</div>
+      <div class="flower-img" data-fname="${fn}">${getFlowerSVG(f.name)}</div>
       <div class="name">${f.name}</div>
       <div class="sub">${f.sub || ''}</div>
       <div class="months">📅 ${f.months}</div>
       <div class="tags">
         ${f.seasons.map(s => `<span class="tag" style="background:${SEASON_COLORS[s]}22;color:${SEASON_COLORS[s]}">${{spring:'春',summer:'夏',autumn:'秋',winter:'冬'}[s]}</span>`).join('')}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+  loadPhotos();
 }
 
 function openModal(jsonStr) {
   const f = JSON.parse(jsonStr);
-  document.getElementById('m-emoji').innerHTML = `<div class="modal-img">${getFlowerSVG(f.name)}</div>`;
+  const mEmojiEl = document.getElementById('m-emoji');
+  mEmojiEl.dataset.fname = f.name;
+  // まずSVGを表示し、写真があれば差し替え
+  const cachedUrl = _wikiCache[f.name];
+  if (cachedUrl) {
+    _setModalPhoto(f.name, cachedUrl);
+  } else {
+    mEmojiEl.innerHTML = `<div class="modal-img">${getFlowerSVG(f.name)}</div>`;
+    // まだキャッシュがない場合はフェッチして反映
+    _fetchPhoto(f).then(url => {
+      if (url && mEmojiEl.dataset.fname === f.name) _setModalPhoto(f.name, url);
+    });
+  }
   document.getElementById('m-name').textContent   = f.name;
   document.getElementById('m-sub').textContent    = f.sub || '';
   document.getElementById('m-months').textContent = '📅 開花時期：' + f.months;
@@ -1051,6 +1210,127 @@ function ganttRowHTML(f, isHerb, currentMonth) {
     <div class="gantt-row-name" title="${f.name}">${f.name}</div>
     <div class="gantt-row-bars">${cells}</div>
   </div>`;
+}
+
+// ===== Wikipedia 写真ローダー =====
+const _wikiCache = (() => {
+  try { return JSON.parse(sessionStorage.getItem('wikiPhotos_v4') || '{}'); } catch { return {}; }
+})();
+function _saveCache() {
+  try { sessionStorage.setItem('wikiPhotos_v4', JSON.stringify(_wikiCache)); } catch {}
+}
+
+// 花名→Wikipedia英語タイトルの補正マップ
+const _wikiOverride = {
+  '桜':                       'Cherry_blossom',
+  'パンジー・ビオラ':         'Pansy',
+  'ナスタチウム':              'Nasturtium',
+  'カモミール':                'Chamomile',
+  'マリーゴールド':            'Marigold',
+  'ボリジ':                    'Borage',
+  'コーンフラワー（矢車菊）':  'Cornflower',
+  'ズッキーニの花':            'Zucchini',
+  'ダイアンサス（なでしこ）':  'Dianthus',
+  '食用菊':                    'Chrysanthemum',
+  'スナップドラゴン（金魚草）':'Antirrhinum',
+  'チャイブの花':              'Chives',
+  'エルダーフラワー':          'Elderflower',
+  '桜草（プリムラ）':          'Primula',
+  'カタクリ':                  'Erythronium_japonicum',
+  'ストック':                  'Matthiola_incana',
+  'スイートバイオレット':      'Viola_odorata',
+  'カレンデュラ':              'Calendula_officinalis',
+  'リナリア':                  'Linaria',
+  'センニチコウ':              'Gomphrena_globosa',
+  'ハイビスカス（ローゼル）':  'Hibiscus_sabdariffa',
+  'デイリリー':                'Hemerocallis',
+  '金木犀':                    'Osmanthus_fragrans',
+  'クチナシ':                  'Gardenia_jasminoides',
+  'コリアンダー（パクチー）':  'Coriander',
+  'ソサエティガーリック':      'Tulbaghia_violacea',
+  'センテッドゼラニウム':      'Pelargonium',
+  'ブラックペパーミント':      'Mentha_%C3%97_piperita',
+  'レモンバーベナ':            'Aloysia_citrodora',
+  'ヒソップ':                  'Hyssopus_officinalis',
+  'セルバチコ':                'Diplotaxis_tenuifolia',
+  'シソ':                      'Perilla',
+  'レモングラス':              'Cymbopogon',
+  'ステビア':                  'Stevia_rebaudiana',
+  'バラ':                      'Rose',
+  'ラベンダー':                'Lavender',
+  'アリッサム':                'Lobularia_maritima',
+  'ベゴニア':                  'Begonia',
+  'カーネーション':            'Carnation',
+  'ニゲラ':                    'Nigella_(plant)',
+  'ハニーサックル':            'Lonicera',
+  'サフラン':                  'Saffron',
+  'デイジー':                  'Bellis_perennis',
+  '菜の花':                    'Rapeseed',
+};
+
+async function _fetchPhoto(flower) {
+  const k = flower.name;
+  if (Object.prototype.hasOwnProperty.call(_wikiCache, k)) return _wikiCache[k];
+
+  const override = _wikiOverride[k];
+  const subName  = (flower.sub || '').split(/[\/,]/)[0].trim().replace(/ /g, '_');
+  const slug     = override || subName;
+  if (!slug) { _wikiCache[k] = null; _saveCache(); return null; }
+
+  try {
+    const r = await fetch(
+      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(slug)}`,
+      { headers: { 'Accept': 'application/json' } }
+    );
+    if (!r.ok) throw 0;
+    const d = await r.json();
+    const src = d?.thumbnail?.source;
+    if (src) {
+      const url = src.replace(/\/\d+px-/, '/280px-');
+      _wikiCache[k] = url;
+      _saveCache();
+      return url;
+    }
+  } catch {}
+  _wikiCache[k] = null;
+  _saveCache();
+  return null;
+}
+
+function _setCardPhoto(name, url) {
+  document.querySelectorAll('.flower-img').forEach(el => {
+    if (el.dataset.fname !== name) return;
+    const img = new Image();
+    img.className = 'flower-photo';
+    img.alt = name;
+    img.onload  = () => { img.classList.add('loaded'); el.innerHTML = ''; el.appendChild(img); };
+    img.onerror = () => { /* SVGのまま */ };
+    img.src = url;
+  });
+}
+
+function _setModalPhoto(name, url) {
+  const el = document.getElementById('m-emoji');
+  if (!el || el.dataset.fname !== name) return;
+  const img = new Image();
+  img.className = 'modal-flower-photo';
+  img.alt = name;
+  img.onload  = () => { el.innerHTML = ''; el.appendChild(img); };
+  img.onerror = () => { el.innerHTML = `<div class="modal-img">${getFlowerSVG(name)}</div>`; };
+  img.src = url;
+}
+
+async function loadPhotos() {
+  const items = getAllItems();
+  const BATCH = 8;
+  for (let i = 0; i < items.length; i += BATCH) {
+    await Promise.allSettled(
+      items.slice(i, i + BATCH).map(async f => {
+        const url = await _fetchPhoto(f);
+        if (url) _setCardPhoto(f.name, url);
+      })
+    );
+  }
 }
 
 renderCards();
